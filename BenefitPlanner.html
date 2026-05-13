@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FY 2027 — Vacation & Personal Day Planner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT@9..144,300..700,0..100&family=Manrope:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F4EFE6;
+    --surface: #FBF7EE;
+    --ink: #1C1814;
+    --ink-soft: #3A332B;
+    --muted: #847A6C;
+    --line: #E2D9C5;
+    --line-soft: #ECE3D0;
+    --vac: #B5503E;
+    --vac-soft: #E4B5A8;
+    --per: #2C5F4F;
+    --per-soft: #A8C5BB;
+    --hol: #A0875C;
+    --shadow: 0 1px 0 rgba(28, 24, 20, 0.04), 0 8px 32px -12px rgba(28, 24, 20, 0.08);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { font-size: 16px; }
+
+  body {
+    font-family: 'Manrope', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    line-height: 1.5;
+    font-feature-settings: 'tnum' 1, 'cv11' 1;
+    min-height: 100vh;
+    padding: 32px 20px 64px;
+    background-image:
+      radial-gradient(circle at 20% 0%, rgba(181, 80, 62, 0.04) 0%, transparent 40%),
+      radial-gradient(circle at 80% 100%, rgba(44, 95, 79, 0.04) 0%, transparent 40%);
+  }
+
+  .app {
+    max-width: 1280px;
+    margin: 0 auto;
+  }
+
+  /* ============ HEADER ============ */
+  header {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 32px;
+    align-items: end;
+    padding-bottom: 28px;
+    margin-bottom: 32px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .brand .eyebrow {
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+
+  .brand h1 {
+    font-family: 'Fraunces', serif;
+    font-weight: 400;
+    font-size: clamp(2.4rem, 5vw, 3.6rem);
+    line-height: 1;
+    letter-spacing: -0.02em;
+    font-variation-settings: 'opsz' 144, 'SOFT' 30;
+    color: var(--ink);
+  }
+
+  .brand h1 em {
+    font-style: italic;
+    font-weight: 300;
+    color: var(--muted);
+    font-variation-settings: 'opsz' 144, 'SOFT' 100;
+  }
+
+  .brand .subtitle {
+    font-size: 0.95rem;
+    color: var(--muted);
+    margin-top: 6px;
+  }
+
+  .balances {
+    display: flex;
+    gap: 20px;
+  }
+
+  .balance {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 16px 20px;
+    min-width: 180px;
+    box-shadow: var(--shadow);
+    transition: transform 0.2s ease;
+  }
+
+  .balance:hover { transform: translateY(-1px); }
+
+  .balance .label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .balance .label::before {
+    content: '';
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+  }
+
+  .balance.vacation .label::before { background: var(--vac); }
+  .balance.personal .label::before { background: var(--per); }
+
+  .balance .value {
+    font-family: 'Fraunces', serif;
+    font-weight: 400;
+    font-size: 2rem;
+    line-height: 1.1;
+    margin-top: 8px;
+    font-variation-settings: 'opsz' 144;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .balance .value .of {
+    font-size: 0.95rem;
+    color: var(--muted);
+    font-weight: 300;
+  }
+
+  .balance .bar {
+    margin-top: 10px;
+    height: 4px;
+    background: var(--line-soft);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .balance .bar .fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .balance.vacation .fill { background: var(--vac); }
+  .balance.personal .fill { background: var(--per); }
+
+  .balance.depleted .value { color: var(--vac); }
+
+  /* ============ CONTROLS ============ */
+  .controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 28px;
+    flex-wrap: wrap;
+  }
+
+  .controls-left {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+
+  .toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .toggle input { display: none; }
+
+  .toggle-track {
+    width: 38px;
+    height: 22px;
+    background: var(--line);
+    border-radius: 11px;
+    position: relative;
+    transition: background 0.2s ease;
+  }
+
+  .toggle-track::after {
+    content: '';
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 16px;
+    height: 16px;
+    background: white;
+    border-radius: 50%;
+    transition: transform 0.2s ease;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+  }
+
+  .toggle input:checked + .toggle-track {
+    background: var(--ink);
+  }
+
+  .toggle input:checked + .toggle-track::after {
+    transform: translateX(16px);
+  }
+
+  .toggle-label {
+    font-size: 0.88rem;
+    font-weight: 500;
+    color: var(--ink-soft);
+  }
+
+  .hint {
+    font-size: 0.78rem;
+    color: var(--muted);
+    font-style: italic;
+    font-family: 'Fraunces', serif;
+    font-variation-settings: 'opsz' 14;
+  }
+
+  .reset-btn {
+    background: transparent;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-family: inherit;
+    font-size: 0.82rem;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .reset-btn:hover {
+    border-color: var(--vac);
+    color: var(--vac);
+  }
+
+  /* ============ CALENDAR GRID ============ */
+  .calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 32px 24px;
+  }
+
+  @media (max-width: 1100px) {
+    .calendar-grid { grid-template-columns: repeat(3, 1fr); }
+  }
+  @media (max-width: 820px) {
+    .calendar-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 520px) {
+    .calendar-grid { grid-template-columns: 1fr; }
+    header { grid-template-columns: 1fr; }
+    .balances { flex-direction: column; }
+    .balance { min-width: 0; }
+  }
+
+  .month {
+    animation: fadeIn 0.5s ease backwards;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .month h2 {
+    font-family: 'Fraunces', serif;
+    font-weight: 400;
+    font-size: 1.4rem;
+    line-height: 1;
+    margin-bottom: 14px;
+    font-variation-settings: 'opsz' 144, 'SOFT' 50;
+    letter-spacing: -0.01em;
+  }
+
+  .month h2 .yr {
+    color: var(--muted);
+    font-style: italic;
+    font-weight: 300;
+    font-size: 0.85em;
+    margin-left: 6px;
+    font-variation-settings: 'opsz' 144, 'SOFT' 100;
+  }
+
+  .dow {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    margin-bottom: 6px;
+  }
+
+  .dow span {
+    text-align: center;
+    font-size: 0.65rem;
+    font-weight: 600;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .dates {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+  }
+
+  .date {
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    background: transparent;
+    border-radius: 50%;
+    font-family: inherit;
+    font-size: 0.82rem;
+    color: var(--ink-soft);
+    cursor: pointer;
+    position: relative;
+    font-variant-numeric: tabular-nums;
+    transition: background 0.15s ease, color 0.15s ease, transform 0.1s ease;
+  }
+
+  .date.blank { visibility: hidden; cursor: default; }
+
+  .date.weekend {
+    color: var(--muted);
+    cursor: default;
+    opacity: 0.5;
+  }
+
+  .date.weekend:hover { background: transparent; }
+
+  .date:not(.weekend):not(.holiday):not(.vac-full):not(.vac-half):not(.per-full):not(.per-half):hover {
+    background: var(--line-soft);
+  }
+
+  .date:active:not(.weekend):not(.holiday) {
+    transform: scale(0.92);
+  }
+
+  /* Holiday — bronze ring, not clickable */
+  .date.holiday {
+    box-shadow: inset 0 0 0 1.5px var(--hol);
+    cursor: help;
+    color: var(--ink);
+    font-weight: 500;
+  }
+
+  .date.holiday.half-holiday::before {
+    content: '½';
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    font-size: 0.55rem;
+    color: var(--hol);
+    background: var(--bg);
+    padding: 0 2px;
+    border-radius: 4px;
+    line-height: 1;
+  }
+
+  /* Vacation full */
+  .date.vac-full {
+    background: var(--vac);
+    color: white;
+    font-weight: 500;
+  }
+
+  /* Vacation half — diagonal */
+  .date.vac-half {
+    background: linear-gradient(135deg, var(--vac) 0%, var(--vac) 49%, var(--bg) 51%, var(--bg) 100%);
+    color: var(--ink);
+    font-weight: 500;
+    box-shadow: inset 0 0 0 1px var(--vac);
+  }
+
+  /* Personal full */
+  .date.per-full {
+    background: var(--per);
+    color: white;
+    font-weight: 500;
+  }
+
+  /* Personal half */
+  .date.per-half {
+    background: linear-gradient(135deg, var(--per) 0%, var(--per) 49%, var(--bg) 51%, var(--bg) 100%);
+    color: var(--ink);
+    font-weight: 500;
+    box-shadow: inset 0 0 0 1px var(--per);
+  }
+
+  /* Today marker */
+  .date.today {
+    outline: 1px dashed var(--ink-soft);
+    outline-offset: 1px;
+  }
+
+  /* ============ LEGEND + HOLIDAY LIST ============ */
+  .footer {
+    margin-top: 56px;
+    padding-top: 28px;
+    border-top: 1px solid var(--line);
+    display: grid;
+    grid-template-columns: 1fr 1.4fr;
+    gap: 40px;
+  }
+
+  @media (max-width: 720px) {
+    .footer { grid-template-columns: 1fr; }
+  }
+
+  .legend-block h3,
+  .holidays-block h3 {
+    font-family: 'Fraunces', serif;
+    font-weight: 400;
+    font-size: 1.15rem;
+    margin-bottom: 14px;
+    font-variation-settings: 'opsz' 144, 'SOFT' 50;
+  }
+
+  .legend-items {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 0.85rem;
+    color: var(--ink-soft);
+  }
+
+  .legend-swatch {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .legend-swatch.vac-full { background: var(--vac); }
+  .legend-swatch.vac-half { background: linear-gradient(135deg, var(--vac) 0%, var(--vac) 49%, var(--bg) 51%, var(--bg) 100%); box-shadow: inset 0 0 0 1px var(--vac); }
+  .legend-swatch.per-full { background: var(--per); }
+  .legend-swatch.per-half { background: linear-gradient(135deg, var(--per) 0%, var(--per) 49%, var(--bg) 51%, var(--bg) 100%); box-shadow: inset 0 0 0 1px var(--per); }
+  .legend-swatch.holiday { box-shadow: inset 0 0 0 1.5px var(--hol); }
+
+  .holiday-list {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px 24px;
+    font-size: 0.82rem;
+  }
+
+  @media (max-width: 520px) {
+    .holiday-list { grid-template-columns: 1fr; }
+  }
+
+  .holiday-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 4px 0;
+    border-bottom: 1px dotted var(--line);
+    color: var(--ink-soft);
+  }
+
+  .holiday-row .h-name { font-weight: 500; }
+  .holiday-row .h-date { color: var(--muted); font-variant-numeric: tabular-nums; }
+
+  .save-indicator {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: var(--ink);
+    color: var(--surface);
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: 0.78rem;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+  }
+
+  .save-indicator.show { opacity: 1; }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="brand">
+      <div class="eyebrow">Fiscal Year 2027</div>
+      <h1>Time <em>off</em></h1>
+      <div class="subtitle">July 1, 2026 — June 30, 2027</div>
+    </div>
+    <div class="balances">
+      <div class="balance vacation" id="balance-vac">
+        <div class="label">Vacation</div>
+        <div class="value"><span id="vac-left">20</span><span class="of"> / 20</span></div>
+        <div class="bar"><div class="fill" id="vac-fill" style="width: 0%"></div></div>
+      </div>
+      <div class="balance personal" id="balance-per">
+        <div class="label">Personal</div>
+        <div class="value"><span id="per-left">3</span><span class="of"> / 3</span></div>
+        <div class="bar"><div class="fill" id="per-fill" style="width: 0%"></div></div>
+      </div>
+    </div>
+  </header>
+
+  <div class="controls">
+    <div class="controls-left">
+      <label class="toggle">
+        <input type="checkbox" id="half-day-toggle">
+        <span class="toggle-track"></span>
+        <span class="toggle-label">Half-day mode</span>
+      </label>
+      <span class="hint">Click a date to cycle: vacation → personal → off</span>
+    </div>
+    <button class="reset-btn" id="reset-btn">Reset all</button>
+  </div>
+
+  <div class="calendar-grid" id="calendar"></div>
+
+  <div class="footer">
+    <div class="legend-block">
+      <h3>Legend</h3>
+      <div class="legend-items">
+        <div class="legend-item"><span class="legend-swatch vac-full"></span>Vacation (full day)</div>
+        <div class="legend-item"><span class="legend-swatch vac-half"></span>Vacation (half day)</div>
+        <div class="legend-item"><span class="legend-swatch per-full"></span>Personal (full day)</div>
+        <div class="legend-item"><span class="legend-swatch per-half"></span>Personal (half day)</div>
+        <div class="legend-item"><span class="legend-swatch holiday"></span>Paid holiday</div>
+      </div>
+    </div>
+    <div class="holidays-block">
+      <h3>Paid holidays</h3>
+      <div class="holiday-list" id="holiday-list"></div>
+    </div>
+  </div>
+</div>
+
+<div class="save-indicator" id="save-indicator">Saved</div>
+
+<script>
+  // ============ DATA ============
+  const HOLIDAYS = {
+    '2026-07-03': { name: 'Independence Day', halfDay: false },
+    '2026-09-07': { name: 'Labor Day', halfDay: false },
+    '2026-11-26': { name: 'Thanksgiving Day', halfDay: false },
+    '2026-11-27': { name: 'Day After Thanksgiving', halfDay: false },
+    '2026-12-24': { name: 'Christmas Eve', halfDay: false },
+    '2026-12-25': { name: 'Christmas Day', halfDay: false },
+    '2026-12-31': { name: "New Year's Eve", halfDay: false },
+    '2027-01-01': { name: "New Year's Day", halfDay: false },
+    '2027-01-18': { name: 'Martin Luther King Day', halfDay: false },
+    '2027-02-15': { name: "Presidents' Day", halfDay: false },
+    '2027-03-26': { name: 'Good Friday', halfDay: true },
+    '2027-05-31': { name: 'Memorial Day', halfDay: false }
+  };
+
+  const VAC_BUDGET = 20;
+  const PER_BUDGET = 3;
+  const STORAGE_KEY = 'phm-fy27-marks-v1';
+
+  const MONTHS = [
+    { y: 2026, m: 6,  name: 'July' },
+    { y: 2026, m: 7,  name: 'August' },
+    { y: 2026, m: 8,  name: 'September' },
+    { y: 2026, m: 9,  name: 'October' },
+    { y: 2026, m: 10, name: 'November' },
+    { y: 2026, m: 11, name: 'December' },
+    { y: 2027, m: 0,  name: 'January' },
+    { y: 2027, m: 1,  name: 'February' },
+    { y: 2027, m: 2,  name: 'March' },
+    { y: 2027, m: 3,  name: 'April' },
+    { y: 2027, m: 4,  name: 'May' },
+    { y: 2027, m: 5,  name: 'June' }
+  ];
+
+  const DOW = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+
+  // ============ STATE ============
+  let marks = {};
+  let halfDayMode = false;
+
+  // ============ STORAGE ============
+  function loadMarks() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) marks = JSON.parse(raw);
+  } catch (e) {
+    marks = {};
+  }
+}
+
+ function saveMarks() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(marks));
+    showSaved();
+  } catch (e) {
+    console.error('Save failed:', e);
+  }
+}
+
+  let saveTimeout;
+  function showSaved() {
+    const ind = document.getElementById('save-indicator');
+    ind.classList.add('show');
+    clearTimeout(saveTimeout);
+    saveTimeout = setTimeout(() => ind.classList.remove('show'), 900);
+  }
+
+  // ============ HELPERS ============
+  function pad(n) { return n < 10 ? '0' + n : '' + n; }
+
+  function dateKey(y, m, d) {
+    return `${y}-${pad(m + 1)}-${pad(d)}`;
+  }
+
+  function daysInMonth(y, m) {
+    return new Date(y, m + 1, 0).getDate();
+  }
+
+  function isWeekend(y, m, d) {
+    const dow = new Date(y, m, d).getDay();
+    return dow === 0 || dow === 6;
+  }
+
+  function todayKey() {
+    const t = new Date();
+    return dateKey(t.getFullYear(), t.getMonth(), t.getDate());
+  }
+
+  // ============ CYCLE LOGIC ============
+  function nextState(currentState, halfMode) {
+    // Cycle: empty → vacation → personal → empty
+    // Half-mode cycles through half versions
+    const fullCycle = [null, 'vac-full', 'per-full'];
+    const halfCycle = [null, 'vac-half', 'per-half'];
+    const cycle = halfMode ? halfCycle : fullCycle;
+
+    const idx = cycle.indexOf(currentState);
+    if (idx === -1) {
+      // Currently in the other mode's state — switch into start of current mode
+      return halfMode ? 'vac-half' : 'vac-full';
+    }
+    return cycle[(idx + 1) % cycle.length];
+  }
+
+  // ============ BALANCE CALC ============
+  function calcBalances() {
+    let vacUsed = 0, perUsed = 0;
+    for (const state of Object.values(marks)) {
+      if (state === 'vac-full') vacUsed += 1;
+      else if (state === 'vac-half') vacUsed += 0.5;
+      else if (state === 'per-full') perUsed += 1;
+      else if (state === 'per-half') perUsed += 0.5;
+    }
+    return { vacUsed, perUsed };
+  }
+
+  function fmtBalance(n) {
+    return n % 1 === 0 ? n.toString() : n.toFixed(1);
+  }
+
+  function updateBalances() {
+    const { vacUsed, perUsed } = calcBalances();
+    const vacLeft = VAC_BUDGET - vacUsed;
+    const perLeft = PER_BUDGET - perUsed;
+
+    document.getElementById('vac-left').textContent = fmtBalance(vacLeft);
+    document.getElementById('per-left').textContent = fmtBalance(perLeft);
+    document.getElementById('vac-fill').style.width = `${Math.min(100, (vacUsed / VAC_BUDGET) * 100)}%`;
+    document.getElementById('per-fill').style.width = `${Math.min(100, (perUsed / PER_BUDGET) * 100)}%`;
+
+    document.getElementById('balance-vac').classList.toggle('depleted', vacLeft < 0);
+    document.getElementById('balance-per').classList.toggle('depleted', perLeft < 0);
+  }
+
+  // ============ RENDER ============
+  function renderCalendar() {
+    const grid = document.getElementById('calendar');
+    grid.innerHTML = '';
+    const today = todayKey();
+
+    MONTHS.forEach((mo, idx) => {
+      const monthEl = document.createElement('div');
+      monthEl.className = 'month';
+      monthEl.style.animationDelay = `${idx * 30}ms`;
+
+      const yearDisplay = mo.name === 'January' || idx === 0 ? `<span class="yr">${mo.y}</span>` : '';
+      monthEl.innerHTML = `
+        <h2>${mo.name}${yearDisplay}</h2>
+        <div class="dow">${DOW.map(d => `<span>${d}</span>`).join('')}</div>
+        <div class="dates"></div>
+      `;
+
+      const datesEl = monthEl.querySelector('.dates');
+      const firstDow = new Date(mo.y, mo.m, 1).getDay();
+      const days = daysInMonth(mo.y, mo.m);
+
+      // Blank cells before day 1
+      for (let i = 0; i < firstDow; i++) {
+        const blank = document.createElement('div');
+        blank.className = 'date blank';
+        datesEl.appendChild(blank);
+      }
+
+      for (let d = 1; d <= days; d++) {
+        const key = dateKey(mo.y, mo.m, d);
+        const btn = document.createElement('button');
+        btn.className = 'date';
+        btn.textContent = d;
+        btn.dataset.key = key;
+
+        const weekend = isWeekend(mo.y, mo.m, d);
+        const holiday = HOLIDAYS[key];
+
+        if (weekend) {
+          btn.classList.add('weekend');
+          btn.disabled = true;
+        } else if (holiday) {
+          btn.classList.add('holiday');
+          if (holiday.halfDay) btn.classList.add('half-holiday');
+          btn.title = holiday.name + (holiday.halfDay ? ' (half day)' : '');
+          btn.disabled = true;
+        } else {
+          const state = marks[key];
+          if (state) btn.classList.add(state);
+          btn.addEventListener('click', () => handleClick(key, btn));
+        }
+
+        if (key === today) btn.classList.add('today');
+
+        datesEl.appendChild(btn);
+      }
+
+      grid.appendChild(monthEl);
+    });
+  }
+
+  function handleClick(key, btn) {
+    const current = marks[key] || null;
+    const next = nextState(current, halfDayMode);
+
+    // Remove old classes, add new
+    btn.classList.remove('vac-full', 'vac-half', 'per-full', 'per-half');
+    if (next) {
+      btn.classList.add(next);
+      marks[key] = next;
+    } else {
+      delete marks[key];
+    }
+
+    updateBalances();
+    saveMarks();
+  }
+
+  function renderHolidayList() {
+    const list = document.getElementById('holiday-list');
+    const entries = Object.entries(HOLIDAYS).sort((a, b) => a[0].localeCompare(b[0]));
+    list.innerHTML = entries.map(([key, h]) => {
+      const [y, m, d] = key.split('-').map(Number);
+      const dateObj = new Date(y, m - 1, d);
+      const dateStr = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      const suffix = h.halfDay ? ' <em style="color:var(--hol)">½</em>' : '';
+      return `<div class="holiday-row"><span class="h-name">${h.name}${suffix}</span><span class="h-date">${dateStr}</span></div>`;
+    }).join('');
+  }
+
+  // ============ EVENT WIRING ============
+  document.getElementById('half-day-toggle').addEventListener('change', (e) => {
+    halfDayMode = e.target.checked;
+  });
+
+  document.getElementById('reset-btn').addEventListener('click', async () => {
+    if (Object.keys(marks).length === 0) return;
+    if (confirm('Clear all marked days? This cannot be undone.')) {
+      marks = {};
+      saveMarks();
+      renderCalendar();
+      updateBalances();
+    }
+  });
+
+  // ============ INIT ============
+  (async function init() {
+    loadMarks();
+    renderCalendar();
+    renderHolidayList();
+    updateBalances();
+  })();
+</script>
+</body>
+</html>
